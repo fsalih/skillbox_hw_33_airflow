@@ -2,10 +2,22 @@ import datetime as dt
 import os
 import sys
 
+import logging
+
 from airflow.models import DAG
 from airflow.operators.python import PythonOperator
 
-path = os.path.expanduser('C:/Users/Lenovo/airflow_hw')
+path = os.path.expanduser('project')
+
+# logging.info('------------------------------------------------')
+# stext = '.'
+stext = '/project'
+# logging.info(f'{stext}: {os.path.exists(stext)}')
+
+# Slogging.info('------------------------------------------------')
+
+path = stext
+
 # Добавим путь к коду проекта в переменную окружения, чтобы он был доступен python-процессу
 os.environ['PROJECT_PATH'] = path
 # Добавим путь к коду проекта в $PATH, чтобы импортировать функции
@@ -13,10 +25,11 @@ sys.path.insert(0, path)
 
 from modules.pipeline import pipeline
 # <YOUR_IMPORTS>
+from modules.predict import predict
 
 args = {
     'owner': 'airflow',
-    'start_date': dt.datetime(2022, 6, 10),
+    'start_date': dt.datetime(2023, 7, 6),
     'retries': 1,
     'retry_delay': dt.timedelta(minutes=1),
     'depends_on_past': False,
@@ -24,7 +37,7 @@ args = {
 
 with DAG(
         dag_id='car_price_prediction',
-        schedule_interval="00 15 * * *",
+        schedule_interval="*/10 * * * *",
         default_args=args,
 ) as dag:
     pipeline = PythonOperator(
@@ -33,3 +46,10 @@ with DAG(
     )
     # <YOUR_CODE>
 
+    predict = PythonOperator(
+        task_id='predict',
+        python_callable=predict,
+    )
+    
+    pipeline >> predict
+    # pipeline.set_downstream(predict)
